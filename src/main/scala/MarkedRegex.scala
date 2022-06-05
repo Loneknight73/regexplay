@@ -40,15 +40,14 @@ object MarkedRegex {
     }
   }
 
-  def shiftcurried(m: Boolean): (REG, Char) => REG = shift(m, _, _)
-
   def rmatch(r: REG, s: String): Boolean = {
     s.toList match {
-      case List()  => empty(r)
-      case c :: cs => hasfinal(cs.foldLeft[REG](shift(true, r, c))(shiftcurried(false)))
+      case Nil  => empty(r)
+      case c :: cs => hasfinal(cs.foldLeft(shift(true, r, c))(shift(false, _, _)))
     }
   }
 }
+
 object MainMarkedRegex extends App {
   import MarkedRegex._
 

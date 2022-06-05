@@ -14,23 +14,25 @@ object WeightedRegex {
   case class Seqw[C, S](a: Regw[C, S], b: Regw[C, S]) extends Regw[C, S]
   case class Repw[C, S](a: Regw[C, S])                extends Regw[C, S]
 
-  def sym[S](c: Char)(implicit sr: Semiring[S]): Regw[Char, S] = {
+  def sym[S: Semiring](c: Char): Regw[Char, S] = {
+    val sr = summon[Semiring[S]]
     Symw(x => if (x == c) sr.one else sr.zero)
   }
 
-  def weighted[S](r: Reg)(implicit sr: Semiring[S]): Regw[Char, S] = {
+  def weighted[S: Semiring](r: Reg): Regw[Char, S] = {
     r match {
       case Eps       => Epsw()
       case Sym(c)    => sym(c)
-      case Alt(p,q)  => Altw[Char, S](weighted[S](p), weighted[S](q))
-      case Seq(p,q)  => Seqw[Char, S](weighted[S](p), weighted[S](q))
-      case Rep(p)    => Repw[Char, S](weighted[S](p))
+      case Alt(p,q)  => Altw(weighted(p), weighted(q))
+      case Seq(p,q)  => Seqw(weighted(p), weighted(q))
+      case Rep(p)    => Repw(weighted(p))
     }
   }
 
-  def acceptw[C, S](regex: Regw[C, S], u: List[C])(implicit sr: Semiring[S]): S = {
+  def acceptw[C, S: Semiring](regex: Regw[C, S], u: List[C]): S = {
+    val sr = summon[Semiring[S]]
     regex match {
-      case Epsw()  => if (u == List()) sr.one else sr.zero
+      case Epsw()  => if (u == Nil) sr.one else sr.zero
       case Symw(f) => u match {
         case c :: Nil => f(c)
         case _ => sr.zero
@@ -38,7 +40,7 @@ object WeightedRegex {
       case Altw(p,q) => sr.add(acceptw(p, u), acceptw(q, u))
       case Seqw(p,q) =>
         sum(for {
-          (u1, u2) <- split(u.toList)
+          (u1, u2) <- split(u)
         } yield sr.mult(acceptw(p,u1), acceptw(q,u2)))
       case Repw(r) =>
         sum(for {
@@ -57,18 +59,16 @@ object MainWeighted extends App {
   import SimpleRegex._
   import WeightedRegex._
   import Semiring._
+  import Semiring.{semiringBool,semiringInt}
 
   def as = Alt(Sym('a'), Rep(Sym('a')))
   def bs =  Alt(Sym('b'), Rep(Sym('b')))
   def seqabs = Seq(as, bs)
-  var p: Int = acceptw[Char, Int](weighted(as), "a".toList)
-  println(p)
-  p = acceptw[Char, Int](weighted(seqabs), "ab".toList)
-  println(p)
-  var b = acceptw[Char, Boolean](weighted(seqabs), "abc".toList)
-  println(b)
-  b = acceptw[Char, Boolean](weighted(seqabs), "aaabbbbbbb".toList)
-  println(b)
-
+  println(acceptw(weighted(as)(semiringInt), "a".toList))
+  println(acceptw(weighted(seqabs)(semiringInt), "ab".toList))
+  println(acceptw(weighted(seqabs)(semiringInt), "abc".toList))
+  println(acceptw(weighted(seqabs)(semiringBool), "aaabbbbbbb".toList))
+  println(acceptw(weighted(seqabs)(semiringBool), "aaacbbbbbbb".toList))
+  println(acceptw(weighted(Rep(Eps))(semiringInt), "".toList))
 }
 

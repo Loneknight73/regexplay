@@ -18,17 +18,19 @@ object SimpleRegex {
       case Sym(c) => u == c.toString
       case Alt(p, q) => accept(p, u) || accept(q, u)
       case Seq(p: Reg, q: Reg) =>
-        or(for {
+        val lb = for {
           (u1, u2) <- split(u.toList)
           b = accept(p, u1.mkString) && accept(q, u2.mkString)
-        } yield b)
+        } yield b
+        or(lb)
       case Rep(r) =>
-        or(for {
+        val lb = for {
           ps <- parts(u.toList)
           x = and(for {
             ui <- ps
           } yield accept(r, ui.mkString))
-        } yield x)
+        } yield x
+        or(lb)
     }
   }
 }
@@ -43,8 +45,10 @@ object MainSimple extends App {
 
   var p = accept(evencs, "abbabba")
   println(p)
+  println(accept(nocs, "abbabba"))
   p = accept(evencs, "acc")
   println(p)
+  println("accept(evencs, \"acc\"): " + accept(evencs, "acc"))
   p = accept(evencs, "accc")
   println(p)
   p = accept(evencs, "caccc")
