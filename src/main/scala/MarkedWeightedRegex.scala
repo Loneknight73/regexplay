@@ -144,15 +144,4 @@ object MainMarkedWeightedRegex3 extends App {
     println(m)
 }
 
-object MainMarkedWeightedRegex4 extends App {
 
-  import MarkedWeightedRegex._
-  import Semiring._
-  import Semiring.semiringBool
-
-  val a: REGW[Char, Boolean] = symw(_ == 'a')
-  val b: REGW[Char, Boolean] = symw(_ == 'b')
-  def anbn: REGW[Char, Boolean] = altw(epsw, seqw(a, seqw(anbn, b)))
-    
-  println(matchw(anbn, "".toList))
-}
